@@ -6,7 +6,7 @@ import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
 import squareroot
-from squareroot.ui.logic import EXAMPLES, build_variables, compute
+from squareroot.ui.logic import build_variables, compute
 
 IS_MAC = sys.platform == "darwin"
 
@@ -15,6 +15,9 @@ ACCENT_ACTIVE = "#0d9488"
 ACCENT_PRESSED = "#115e59"
 ERROR_COLOR = "#a5382f"
 SYMBOLIC_COLOR = "#7c8a38"
+
+MIN_PRECISION = 1
+MAX_PRECISION = 100
 
 
 def _configure_style(root):
@@ -142,7 +145,7 @@ class SquareRootApp:
 
         self._last_result = None
 
-        self.expression_var = tk.StringVar(value="-4")
+        self.expression_var = tk.StringVar(value="")
         self.precision_var = tk.IntVar(value=squareroot.DEFAULT_PRECISION)
         self.status_var = tk.StringVar(value="Ready")
         self.precision_status_var = tk.StringVar(value=f"decimal · precision {squareroot.DEFAULT_PRECISION}")
@@ -185,7 +188,6 @@ class SquareRootApp:
         body.pack(fill=tk.BOTH, expand=True)
 
         self._build_expression_row(body)
-        self._build_examples_row(body)
         self._build_precision_row(body)
         self._build_variables_section(body)
         self._build_result_panel(body)
@@ -217,22 +219,6 @@ class SquareRootApp:
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 0))
         entry.bind("<Return>", self._on_evaluate)
 
-    def _build_examples_row(self, parent):
-        frame = ttk.Frame(parent)
-        frame.pack(fill=tk.X, pady=(0, 12))
-
-        ttk.Label(frame, text="EXAMPLES", font=self.fonts["section"]).pack(anchor="w")
-
-        row = ttk.Frame(frame)
-        row.pack(fill=tk.X, pady=(4, 0))
-        for example in EXAMPLES:
-            ttk.Button(
-                row,
-                text=example.label,
-                style="Flat.TButton",
-                command=lambda ex=example: self._load_example(ex),
-            ).pack(side=tk.LEFT, padx=(0, 4))
-
     def _build_precision_row(self, parent):
         frame = ttk.Frame(parent)
         frame.pack(fill=tk.X, pady=(0, 12))
@@ -242,8 +228,8 @@ class SquareRootApp:
         ttk.Label(precision_col, text="PRECISION", font=self.fonts["section"]).pack(anchor="w")
         ttk.Spinbox(
             precision_col,
-            from_=1,
-            to=80,
+            from_=MIN_PRECISION,
+            to=MAX_PRECISION,
             textvariable=self.precision_var,
             width=6,
             wrap=False,
@@ -320,9 +306,10 @@ class SquareRootApp:
             value = self.precision_var.get()
         except tk.TclError:
             value = None
-        if value is None or not (1 <= value <= 80):
+        if value is None or not (MIN_PRECISION <= value <= MAX_PRECISION):
             messagebox.showerror(
-                "Invalid precision", "Precision must be a whole number between 1 and 80."
+                "Invalid precision",
+                f"Precision must be a whole number between {MIN_PRECISION} and {MAX_PRECISION}.",
             )
             return None
         return value
@@ -337,13 +324,6 @@ class SquareRootApp:
         result = compute(radicand, variables, precision)
         self._last_result = result
         self._render_result(result, precision)
-
-    def _load_example(self, example):
-        self.expression_var.set(example.radicand)
-        self.table.clear()
-        for name, value in example.variables:
-            self.table.add_row(name, value)
-        self._show_ready()
 
     def _pack_result_body(self, show_badge, show_hint):
         # Re-pack header/[badge]/value/[hint] together, in this fixed order,

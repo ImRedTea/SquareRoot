@@ -1,7 +1,7 @@
 import unittest
 
 import squareroot
-from squareroot.ui.logic import EXAMPLES, build_variables, compute
+from squareroot.ui.logic import build_variables, compute
 
 
 class BuildVariablesTests(unittest.TestCase):
@@ -91,18 +91,6 @@ class WrappingBehaviorTests(unittest.TestCase):
         expected = str(squareroot.evaluate("sqrt(sqrt(4))"))
         self.assertEqual(result.value, expected)
         self.assertNotEqual(result.value, "2")
-
-
-class ExampleGalleryTests(unittest.TestCase):
-    def test_all_examples_are_computable_without_crashing(self):
-        for ex in EXAMPLES:
-            variables = build_variables(ex.variables)
-            compute(ex.radicand, variables, 28)
-
-    def test_example_count_and_labels(self):
-        labels = [ex.label for ex in EXAMPLES]
-        self.assertEqual(len(labels), 7)
-        self.assertIn("1/0", labels)
 
 
 if __name__ == "__main__":

@@ -5,28 +5,10 @@ unit-testable on systems where Tk is not installed.
 """
 
 from dataclasses import dataclass
-from typing import NamedTuple
 
 import squareroot
 from squareroot import Complex
 from squareroot.errors import SquareRootError
-
-
-class Example(NamedTuple):
-    label: str
-    radicand: str
-    variables: tuple
-
-
-EXAMPLES = (
-    Example("-4", "-4", ()),
-    Example("3+4i", "3+4i", ()),
-    Example("a^2", "a^2", (("a", ""),)),
-    Example("a^2 (a = -3)", "a^2", (("a", "-3"),)),
-    Example("4*a^2", "4*a^2", (("a", ""),)),
-    Example("a^2/b^2", "a^2/b^2", (("a", ""), ("b", ""))),
-    Example("1/0", "1/0", ()),
-)
 
 
 def build_variables(raw_rows):
