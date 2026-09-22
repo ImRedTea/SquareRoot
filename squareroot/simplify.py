@@ -1,13 +1,28 @@
 """Symbolic simplification for expressions that may contain `Variable` nodes.
 
-`sqrt(x^2) -> x` is implemented as a *formal* symbolic convention, not the
-true principal value: for real x < 0 the correct value is |x| = -x, not x.
-There is no branch/sign tracking in this AST, so
-`evaluate("sqrt(a^2)", variables={"a": "-3"})` returns -3, while
-`evaluate("sqrt(9)")` returns 3 -- the two paths disagree in sign for
-negative substitutions. This mirrors the classic complex-sqrt branch-cut
-pitfall (sqrt(-1)*sqrt(-1) = -1, not sqrt((-1)*(-1)) = 1) and is accepted
-as a known, documented limitation.
+sqrt(x^n) for a literal integer exponent n is reduced using the identities
+sqrt(x^(2k)) = |x^k| and, for odd n = 2k+1, sqrt(x^(2k+1)) = |x^k| * sqrt(x)
+(`|.|` is `Complex.modulus()`, reused via the existing `abs` function). Both
+are exact for any REAL x regardless of sign: `sqrt(a^2)` simplifies to
+`abs(a)`, not `a`, precisely so that `sqrt((-3)^2)` comes out to 3, not -3.
+
+This still assumes the substituted value is real: for a variable later bound
+to a genuinely complex (non-real) number, sqrt(x^2) is not generally equal
+to |x| (there is no single algebraic correction factor for a complex base),
+so results may not match the true principal square root in that case. This
+is inherent to simplifying square roots symbolically without sign/branch
+tracking on non-real values.
+
+A separate, unresolved limitation: distributing sqrt over a PRODUCT OF TWO
+DIFFERENT symbolic factors (`sqrt(a*b) -> sqrt(a)*sqrt(b)`) is not sound in
+general once both factors can be negative/complex -- e.g. substituting
+a=-4, b=-9 gives sqrt(a)*sqrt(b) = 2i*3i = -6, while the true sqrt(a*b) =
+sqrt(36) = 6. This mirrors the classic complex-sqrt branch-cut pitfall
+(sqrt(-1)*sqrt(-1) = -1, not sqrt((-1)*(-1)) = 1) and has no simple fix
+without tracking arguments/branches through the whole expression tree. It
+is a known, accepted limitation, distinct from (and not fixed by) the
+abs() correction above -- which only concerns a single base raised to a
+power, not a product of two independent symbolic radicands.
 
 Two of the algebraic identities below (`x*0 -> 0`, `x^0 -> 1`) discard a
 still-symbolic subtree. Both are verified zero-exception tautologies in
@@ -139,9 +154,10 @@ def _simplify_sqrt(arg):
         if isinstance(exponent, Literal) and _is_literal_integer(exponent.value):
             n = int(exponent.value.real)
             if n % 2 == 0:
-                return simplify(BinOp("^", arg.left, Literal(Complex(n // 2, 0))))
-            half = Literal(Complex((n - 1) // 2, 0))
-            return simplify(BinOp("*", BinOp("^", arg.left, half), Call("sqrt", arg.left)))
+                half_power = BinOp("^", arg.left, Literal(Complex(n // 2, 0)))
+                return simplify(Call("abs", half_power))
+            half_power = BinOp("^", arg.left, Literal(Complex((n - 1) // 2, 0)))
+            return simplify(BinOp("*", Call("abs", half_power), Call("sqrt", arg.left)))
     return Call("sqrt", arg)
 
 

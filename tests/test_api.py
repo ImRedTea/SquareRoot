@@ -53,7 +53,7 @@ class ApiTests(unittest.TestCase):
     def test_sqrt_of_variable_squared_is_symbolic(self):
         result = evaluate("sqrt(a^2)")
         self.assertIsInstance(result, Expression)
-        self.assertEqual(str(result), "a")
+        self.assertEqual(str(result), "abs(a)")
 
     def test_variable_substitution_collapses_to_complex(self):
         result = evaluate("a^2", variables={"a": "3"})
@@ -63,12 +63,11 @@ class ApiTests(unittest.TestCase):
     def test_sqrt_substitution_collapses_to_complex(self):
         self.assertEqual(evaluate("sqrt(a^2)", variables={"a": "3"}), Complex(3, 0))
 
-    def test_documented_sign_discrepancy_for_negative_substitution(self):
-        # sqrt(x^2) -> x is a formal symbolic convention, not the true
-        # principal value; it disagrees in sign with direct numeric sqrt
-        # for negative substitutions. See squareroot/simplify.py docstring.
-        self.assertEqual(evaluate("sqrt(a^2)", variables={"a": "-3"}), Complex(-3, 0))
-        self.assertEqual(evaluate("sqrt(9)"), Complex(3, 0))
+    def test_sqrt_of_negative_substitution_matches_direct_sqrt(self):
+        # sqrt(x^2) simplifies to abs(x), which is exact for any real x --
+        # sqrt((-3)^2) must equal 3, matching direct numeric sqrt(9).
+        self.assertEqual(evaluate("sqrt(a^2)", variables={"a": "-3"}), Complex(3, 0))
+        self.assertEqual(evaluate("sqrt(a^2)", variables={"a": "-3"}), evaluate("sqrt(9)"))
 
     def test_float_variable_value_rejected(self):
         with self.assertRaises(TypeError):

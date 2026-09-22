@@ -50,22 +50,30 @@ class SimplifyTests(unittest.TestCase):
         self.assertEqual(simplify(parse("sqrt(-4)")), Literal(Complex(0, 2)))
 
     def test_sqrt_of_even_power(self):
-        self.assertEqual(render(simplify(parse("sqrt(a^2)"))), "a")
+        # sqrt(x^2) = |x| for real x, not x -- sqrt((-3)^2) must be 3, not -3.
+        self.assertEqual(render(simplify(parse("sqrt(a^2)"))), "abs(a)")
+
+    def test_sqrt_of_even_power_negative_substitution_is_correct(self):
+        self.assertEqual(evaluate("sqrt(a^2)", variables={"a": "-3"}), Complex(3, 0))
+        self.assertEqual(evaluate("sqrt(a^2)", variables={"a": "-3"}), evaluate("sqrt(9)"))
 
     def test_sqrt_distributes_over_product_with_constant(self):
-        self.assertEqual(render(simplify(parse("sqrt(4*a^2)"))), "2*a")
+        self.assertEqual(render(simplify(parse("sqrt(4*a^2)"))), "2*abs(a)")
+        self.assertEqual(evaluate("sqrt(4*a^2)", variables={"a": "-3"}), Complex(6, 0))
 
     def test_sqrt_distributes_leaving_residual_sqrt(self):
-        self.assertEqual(render(simplify(parse("sqrt(a^2*b)"))), "a*sqrt(b)")
+        self.assertEqual(render(simplify(parse("sqrt(a^2*b)"))), "abs(a)*sqrt(b)")
 
     def test_sqrt_of_odd_power(self):
-        self.assertEqual(render(simplify(parse("sqrt(a^3)"))), "a*sqrt(a)")
+        self.assertEqual(render(simplify(parse("sqrt(a^3)"))), "abs(a)*sqrt(a)")
+        self.assertEqual(evaluate("sqrt(a^3)", variables={"a": "-2"}), evaluate("sqrt(-8)"))
 
     def test_sqrt_distributes_over_quotient(self):
-        self.assertEqual(render(simplify(parse("sqrt(a^2/b^2)"))), "a/b")
+        self.assertEqual(render(simplify(parse("sqrt(a^2/b^2)"))), "abs(a)/abs(b)")
+        self.assertEqual(evaluate("sqrt(a^2/b^2)", variables={"a": "-3", "b": "2"}), Complex(Decimal("1.5"), 0))
 
     def test_sqrt_of_negative_constant_times_variable_squared(self):
-        self.assertEqual(render(simplify(parse("sqrt(-4*a^2)"))), "2i*a")
+        self.assertEqual(render(simplify(parse("sqrt(-4*a^2)"))), "2i*abs(a)")
 
     def test_sqrt_of_bare_variable_unreduced(self):
         self.assertEqual(simplify(parse("sqrt(a)")), Call("sqrt", Variable("a")))
