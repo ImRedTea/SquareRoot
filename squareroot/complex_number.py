@@ -89,7 +89,7 @@ class Complex:
         other = self._coerce(other)
         denom = other.real * other.real + other.imag * other.imag
         if denom == 0:
-            raise DivisionByZeroError("division by zero")
+            raise DivisionByZeroError("division by zero", code="division_by_zero")
         return Complex(
             (self.real * other.real + self.imag * other.imag) / denom,
             (self.imag * other.real - self.real * other.imag) / denom,
@@ -123,12 +123,15 @@ class Complex:
         if self.imag != 0 or self.real < 0 or exponent.imag != 0:
             raise UnsupportedOperationError(
                 "a non-integer power is only supported for a non-negative real "
-                "base with a real exponent"
+                "base with a real exponent",
+                code="non_integer_power_complex_base",
             )
         if self.real == 0:
             if exponent.real > 0:
                 return Complex(0, 0)
-            raise DivisionByZeroError("0 cannot be raised to a non-positive power")
+            raise DivisionByZeroError(
+                "0 cannot be raised to a non-positive power", code="zero_to_nonpositive_power"
+            )
         magnitude = (exponent.real * self.real.ln()).exp()
         return Complex(magnitude, 0)
 

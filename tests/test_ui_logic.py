@@ -49,7 +49,7 @@ class ComputeNumericTests(unittest.TestCase):
 
 class ComputeSymbolicTests(unittest.TestCase):
     def test_symbolic_result_no_variables_bound(self):
-        result = compute("a^2", {}, 28)
+        result = compute("a^2", {}, 28, language="en")
         self.assertEqual(result.state, "symbolic")
         self.assertEqual(result.header, "√(a^2) simplifies to")
         self.assertEqual(result.value, "abs(a)")
@@ -63,6 +63,33 @@ class ComputeSymbolicTests(unittest.TestCase):
     def test_two_free_variables(self):
         result = compute("a^2/b^2", {}, 28)
         self.assertEqual(result.state, "symbolic")
+
+
+class ComputeLanguageTests(unittest.TestCase):
+    def test_default_language_is_russian(self):
+        result = compute("a^2", {}, 28)
+        self.assertEqual(result.header, "√(a^2) упрощается до")
+        self.assertIn("Укажите значение", result.hint)
+
+    def test_chinese_symbolic_result(self):
+        result = compute("a^2", {}, 28, language="zh")
+        self.assertEqual(result.header, "√(a^2) 化简为")
+
+    def test_japanese_symbolic_result(self):
+        result = compute("a^2", {}, 28, language="ja")
+        self.assertEqual(result.header, "√(a^2) を簡略化すると")
+
+    def test_error_type_stable_across_languages(self):
+        for language in ("ru", "en", "zh", "ja"):
+            result = compute("1/0", {}, 28, language=language)
+            self.assertEqual(result.error_type, "DivisionByZeroError")
+
+    def test_error_type_label_translated(self):
+        ru = compute("1/0", {}, 28, language="ru")
+        en = compute("1/0", {}, 28, language="en")
+        self.assertEqual(ru.error_type_label, "Деление на ноль")
+        self.assertEqual(en.error_type_label, "Division by zero")
+        self.assertNotEqual(ru.error_type_label, en.error_type_label)
 
 
 class ComputeErrorTests(unittest.TestCase):

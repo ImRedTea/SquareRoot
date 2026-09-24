@@ -46,7 +46,9 @@ def tokenize(text):
         if ch.isdigit() or ch == ".":
             match = _NUMBER_RE.match(text, i)
             if not match:
-                raise TokenizeError(f"invalid number at position {i}")
+                raise TokenizeError(
+                    f"invalid number at position {i}", code="invalid_number", position=i
+                )
             literal = match.group()
             end = match.end()
             if end < n and text[end] in ("i", "I") and not (
@@ -72,7 +74,12 @@ def tokenize(text):
             tokens.append(Token(_SIMPLE_TOKENS[ch], ch, i))
             i += 1
             continue
-        raise TokenizeError(f"unexpected character {ch!r} at position {i}")
+        raise TokenizeError(
+            f"unexpected character {ch!r} at position {i}",
+            code="unexpected_character",
+            char=ch,
+            position=i,
+        )
     tokens.append(Token("EOF", None, n))
     return tokens
 
@@ -130,7 +137,11 @@ class Parser:
         token = self._peek()
         if token.type != type_:
             raise ParseError(
-                f"expected {type_} but found {token.type} at position {token.pos}"
+                f"expected {type_} but found {token.type} at position {token.pos}",
+                code="expected_token",
+                expected=type_,
+                found=token.type,
+                position=token.pos,
             )
         return self._advance()
 
@@ -183,7 +194,12 @@ class Parser:
             node = self._expression()
             self._expect("RPAREN")
             return node
-        raise ParseError(f"unexpected token {token.type} at position {token.pos}")
+        raise ParseError(
+            f"unexpected token {token.type} at position {token.pos}",
+            code="unexpected_token",
+            found=token.type,
+            position=token.pos,
+        )
 
 
 def parse(text):

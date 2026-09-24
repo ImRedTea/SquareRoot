@@ -6,6 +6,7 @@ import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
 import squareroot
+from squareroot.ui import i18n, settings
 from squareroot.ui.logic import build_variables, compute
 
 IS_MAC = sys.platform == "darwin"
@@ -144,11 +145,13 @@ class SquareRootApp:
         self.fonts = _build_fonts()
 
         self._last_result = None
+        self.language = settings.load_language()
 
         self.expression_var = tk.StringVar(value="")
         self.precision_var = tk.IntVar(value=squareroot.DEFAULT_PRECISION)
-        self.status_var = tk.StringVar(value="Ready")
-        self.precision_status_var = tk.StringVar(value=f"decimal · precision {squareroot.DEFAULT_PRECISION}")
+        self.status_var = tk.StringVar(value="")
+        self.precision_status_var = tk.StringVar(value="")
+        self.language_var = tk.StringVar(value=self.language)
 
         self._build_menu()
         self._build_widgets()
@@ -156,24 +159,37 @@ class SquareRootApp:
 
     # -- construction -----------------------------------------------------
 
+    def _t(self, key, **kwargs):
+        return i18n.translate(self.language, key, **kwargs)
+
     def _build_menu(self):
         menubar = tk.Menu(self.root)
 
         file_menu = tk.Menu(menubar, tearoff=False)
         file_menu.add_command(
-            label="Quit",
+            label=self._t("menu.file.quit"),
             command=self.root.destroy,
             accelerator="Cmd+Q" if IS_MAC else "Ctrl+Q",
         )
-        menubar.add_cascade(label="File", menu=file_menu)
+        menubar.add_cascade(label=self._t("menu.file"), menu=file_menu)
 
         edit_menu = tk.Menu(menubar, tearoff=False)
-        edit_menu.add_command(label="Copy Result", command=self._copy_result)
-        menubar.add_cascade(label="Edit", menu=edit_menu)
+        edit_menu.add_command(label=self._t("menu.edit.copy_result"), command=self._copy_result)
+        menubar.add_cascade(label=self._t("menu.edit"), menu=edit_menu)
+
+        language_menu = tk.Menu(menubar, tearoff=False)
+        for code, native_name in i18n.LANGUAGES.items():
+            language_menu.add_radiobutton(
+                label=native_name,
+                value=code,
+                variable=self.language_var,
+                command=lambda code=code: self._set_language(code),
+            )
+        menubar.add_cascade(label=self._t("menu.language"), menu=language_menu)
 
         help_menu = tk.Menu(menubar, tearoff=False)
-        help_menu.add_command(label="About SquareRoot", command=self._show_about)
-        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label=self._t("menu.help.about"), command=self._show_about)
+        menubar.add_cascade(label=self._t("menu.help"), menu=help_menu)
 
         self.root.config(menu=menubar)
 
@@ -196,9 +212,10 @@ class SquareRootApp:
         frame = ttk.Frame(parent)
         frame.pack(fill=tk.X, pady=(0, 12))
 
-        ttk.Label(
-            frame, text="EXPRESSION (UNDER THE SQUARE ROOT)", font=self.fonts["section"]
-        ).pack(anchor="w")
+        self.lbl_expression_section = ttk.Label(
+            frame, text=self._t("section.expression"), font=self.fonts["section"]
+        )
+        self.lbl_expression_section.pack(anchor="w")
 
         row = ttk.Frame(frame)
         row.pack(fill=tk.X, pady=(4, 0))
@@ -225,7 +242,10 @@ class SquareRootApp:
 
         precision_col = ttk.Frame(frame)
         precision_col.pack(side=tk.LEFT)
-        ttk.Label(precision_col, text="PRECISION", font=self.fonts["section"]).pack(anchor="w")
+        self.lbl_precision_section = ttk.Label(
+            precision_col, text=self._t("section.precision"), font=self.fonts["section"]
+        )
+        self.lbl_precision_section.pack(anchor="w")
         ttk.Spinbox(
             precision_col,
             from_=MIN_PRECISION,
@@ -235,12 +255,13 @@ class SquareRootApp:
             wrap=False,
         ).pack(anchor="w", pady=(4, 0))
 
-        ttk.Button(
+        self.btn_evaluate = ttk.Button(
             frame,
-            text="Take Square Root",
+            text=self._t("button.evaluate"),
             style="Accent.TButton",
             command=self._on_evaluate,
-        ).pack(side=tk.LEFT, padx=(14, 0), anchor="s")
+        )
+        self.btn_evaluate.pack(side=tk.LEFT, padx=(14, 0), anchor="s")
 
     def _build_variables_section(self, parent):
         frame = ttk.Frame(parent)
@@ -248,13 +269,17 @@ class SquareRootApp:
 
         header = ttk.Frame(frame)
         header.pack(fill=tk.X)
-        ttk.Label(header, text="VARIABLES", font=self.fonts["section"]).pack(side=tk.LEFT)
-        ttk.Label(
+        self.lbl_variables_section = ttk.Label(
+            header, text=self._t("section.variables"), font=self.fonts["section"]
+        )
+        self.lbl_variables_section.pack(side=tk.LEFT)
+        self.lbl_variables_hint = ttk.Label(
             header,
-            text="substituted into the simplified result",
+            text=self._t("section.variables_hint"),
             font=self.fonts["section"],
             foreground="#85857f",
-        ).pack(side=tk.LEFT, padx=(8, 0))
+        )
+        self.lbl_variables_hint.pack(side=tk.LEFT, padx=(8, 0))
 
         table_border = ttk.Frame(frame, relief="solid", borderwidth=1)
         table_border.pack(fill=tk.X, pady=(4, 4))
@@ -308,8 +333,12 @@ class SquareRootApp:
             value = None
         if value is None or not (MIN_PRECISION <= value <= MAX_PRECISION):
             messagebox.showerror(
-                "Invalid precision",
-                f"Precision must be a whole number between {MIN_PRECISION} and {MAX_PRECISION}.",
+                self._t("dialog.invalid_precision.title"),
+                self._t(
+                    "dialog.invalid_precision.message",
+                    min=MIN_PRECISION,
+                    max=MAX_PRECISION,
+                ),
             )
             return None
         return value
@@ -321,7 +350,7 @@ class SquareRootApp:
 
         radicand = self.expression_var.get().strip()
         variables = build_variables(self.table.raw_rows())
-        result = compute(radicand, variables, precision)
+        result = compute(radicand, variables, precision, language=self.language)
         self._last_result = result
         self._render_result(result, precision)
 
@@ -343,10 +372,10 @@ class SquareRootApp:
         self._last_result = None
         self.result_accent.configure(bg="#f0f0ee")
         self.result_header_label.configure(text="")
-        self.result_value_label.configure(text="Ready.", foreground="#85857f")
+        self.result_value_label.configure(text=self._t("result.ready"), foreground="#85857f")
         self._pack_result_body(show_badge=False, show_hint=False)
-        self.status_var.set("Ready")
-        self.precision_status_var.set(f"decimal · precision {self.precision_var.get()}")
+        self.status_var.set(self._t("status.ready"))
+        self.precision_status_var.set(self._t("status.precision", precision=self.precision_var.get()))
 
     def _render_result(self, result, precision):
         if result.state == "numeric":
@@ -354,29 +383,33 @@ class SquareRootApp:
             self.result_header_label.configure(text=result.header)
             self.result_value_label.configure(text=result.value, foreground="#1e1e1c")
             self._pack_result_body(show_badge=False, show_hint=False)
-            self.status_var.set("OK")
+            self.status_var.set(self._t("status.ok"))
         elif result.state == "symbolic":
             self.result_accent.configure(bg=SYMBOLIC_COLOR)
             self.result_header_label.configure(text=result.header)
             self.result_value_label.configure(text=result.value, foreground="#1e1e1c")
             self.result_hint_label.configure(text=result.hint)
             self._pack_result_body(show_badge=False, show_hint=True)
-            self.status_var.set("Symbolic")
+            self.status_var.set(self._t("status.symbolic"))
         else:
             self.result_accent.configure(bg=ERROR_COLOR)
             self.result_header_label.configure(text=result.header)
-            self.result_error_badge.configure(text=result.error_type)
+            self.result_error_badge.configure(text=result.error_type_label)
             self.result_value_label.configure(text=result.error_message, foreground="#1e1e1c")
             self._pack_result_body(show_badge=True, show_hint=False)
-            self.status_var.set(result.error_type)
+            self.status_var.set(result.error_type_label)
 
-        self.precision_status_var.set(f"decimal · precision {precision}")
+        self.precision_status_var.set(self._t("status.precision", precision=precision))
 
     def _copy_result(self):
         result = self._last_result
         if result is None:
             return
-        text = f"{result.error_type}: {result.error_message}" if result.state == "error" else result.value
+        text = (
+            f"{result.error_type_label}: {result.error_message}"
+            if result.state == "error"
+            else result.value
+        )
         if not text:
             return
         self.root.clipboard_clear()
@@ -384,10 +417,29 @@ class SquareRootApp:
 
     def _show_about(self):
         messagebox.showinfo(
-            "About SquareRoot",
-            "SquareRoot — complex square root calculator\n"
-            "Exact decimal arithmetic and analytical simplification, Python standard library only.",
+            self._t("dialog.about.title"),
+            self._t("dialog.about.message"),
         )
+
+    def _set_language(self, code):
+        if code == self.language:
+            return
+        self.language = code
+        self.language_var.set(code)
+        settings.save_language(code)
+        self._apply_language()
+
+    def _apply_language(self):
+        self._build_menu()
+        self.lbl_expression_section.configure(text=self._t("section.expression"))
+        self.lbl_precision_section.configure(text=self._t("section.precision"))
+        self.btn_evaluate.configure(text=self._t("button.evaluate"))
+        self.lbl_variables_section.configure(text=self._t("section.variables"))
+        self.lbl_variables_hint.configure(text=self._t("section.variables_hint"))
+        if self._last_result is None:
+            self._show_ready()
+        else:
+            self._on_evaluate()
 
 
 def main():

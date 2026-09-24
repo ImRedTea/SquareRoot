@@ -133,7 +133,9 @@ def _is_literal_integer(value):
 def _simplify_call(node):
     name = node.name.lower()
     if name not in _FUNCTIONS:
-        raise UnknownFunctionError(f"unknown function {node.name!r}")
+        raise UnknownFunctionError(
+            f"unknown function {node.name!r}", code="unknown_function", name=node.name
+        )
     arg = simplify(node.arg)
     if name == "sqrt":
         return _simplify_sqrt(arg)

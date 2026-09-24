@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import squareroot
 from squareroot import Complex
 from squareroot.errors import SquareRootError
+from squareroot.ui import i18n
 
 
 def build_variables(raw_rows):
@@ -33,12 +34,13 @@ class ComputeResult:
     state: str  # "numeric" | "symbolic" | "error"
     header: str
     value: str
-    error_type: str
+    error_type: str  # stable, untranslated exception class name
+    error_type_label: str  # localized display label for error_type
     error_message: str
     hint: str
 
 
-def compute(radicand, variables, precision):
+def compute(radicand, variables, precision, language=i18n.DEFAULT_LANGUAGE):
     """Always evaluates sqrt(<radicand>) -- wrapped exactly once, so a
     radicand that itself contains "sqrt(...)" is not double-unwrapped.
     """
@@ -51,7 +53,8 @@ def compute(radicand, variables, precision):
             header=f"√({radicand})",
             value="",
             error_type=type(e).__name__,
-            error_message=str(e),
+            error_type_label=i18n.error_type_label(language, e),
+            error_message=i18n.translate_error(language, e),
             hint="",
         )
 
@@ -61,15 +64,17 @@ def compute(radicand, variables, precision):
             header=f"√({radicand}) =",
             value=str(result),
             error_type="",
+            error_type_label="",
             error_message="",
             hint="",
         )
 
     return ComputeResult(
         state="symbolic",
-        header=f"√({radicand}) simplifies to",
+        header=f"√({radicand}){i18n.translate(language, 'header.symbolic_suffix')}",
         value=str(result),
         error_type="",
+        error_type_label="",
         error_message="",
-        hint="Provide a value for the free variable(s) above to get a number.",
+        hint=i18n.translate(language, "hint.provide_value"),
     )

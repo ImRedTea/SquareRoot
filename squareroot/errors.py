@@ -1,5 +1,15 @@
 class SquareRootError(Exception):
-    """Base class for all errors raised by the squareroot core."""
+    """Base class for all errors raised by the squareroot core.
+
+    Carries an optional machine-readable `code` and `params` alongside the
+    English `message`, so callers (e.g. the UI) can re-render the error in
+    another language without parsing `str(exc)`.
+    """
+
+    def __init__(self, message, *, code=None, **params):
+        super().__init__(message)
+        self.code = code or type(self).__name__
+        self.params = params
 
 
 class TokenizeError(SquareRootError):
