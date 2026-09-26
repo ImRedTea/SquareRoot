@@ -2,6 +2,10 @@ import unittest
 
 from squareroot.errors import (
     DivisionByZeroError,
+    ExpressionTooComplexError,
+    InvalidPrecisionError,
+    InvalidVariableValueError,
+    NumberOverflowError,
     ParseError,
     TokenizeError,
     UnknownFunctionError,
@@ -24,6 +28,10 @@ class TranslationCoverageTests(unittest.TestCase):
             DivisionByZeroError("x"),
             UnknownFunctionError("x"),
             UnsupportedOperationError("x"),
+            NumberOverflowError("x"),
+            ExpressionTooComplexError("x"),
+            InvalidPrecisionError("x"),
+            InvalidVariableValueError("x"),
         ]
         for language in i18n.LANGUAGES:
             for exc in exceptions:
@@ -42,6 +50,11 @@ class TranslationCoverageTests(unittest.TestCase):
             DivisionByZeroError("x", code="division_by_zero"),
             DivisionByZeroError("x", code="zero_to_nonpositive_power"),
             UnsupportedOperationError("x", code="non_integer_power_complex_base"),
+            UnsupportedOperationError("x", code="exponent_too_large"),
+            NumberOverflowError("x", code="overflow"),
+            ExpressionTooComplexError("x", code="too_complex"),
+            InvalidPrecisionError("x", code="invalid_precision", min=1, max=1000),
+            InvalidVariableValueError("x", code="invalid_variable_value", name="a", value="abc"),
         ]
         for language in i18n.LANGUAGES:
             for exc in cases:

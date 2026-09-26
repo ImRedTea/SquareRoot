@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 import squareroot
 from squareroot.ui import i18n
@@ -123,6 +124,18 @@ class WrappingBehaviorTests(unittest.TestCase):
         expected = str(squareroot.evaluate("sqrt(sqrt(4))"))
         self.assertEqual(result.value, expected)
         self.assertNotEqual(result.value, "2")
+
+
+class UnexpectedExceptionTests(unittest.TestCase):
+    def test_bug_in_core_is_shown_as_localized_internal_error(self):
+        with mock.patch.object(squareroot, "evaluate", side_effect=RuntimeError("boom")):
+            for lang in i18n.LANGUAGES:
+                with self.subTest(lang=lang):
+                    result = compute("2", {}, 28, language=lang)
+                    self.assertEqual(result.state, "error")
+                    self.assertEqual(result.error_type, "InternalError")
+                    self.assertIn("RuntimeError", result.error_message)
+                    self.assertNotEqual(result.error_type_label, "InternalError")
 
 
 if __name__ == "__main__":

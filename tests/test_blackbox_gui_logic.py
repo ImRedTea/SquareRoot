@@ -4,6 +4,7 @@ Input is what a user types (radicand, variable rows, precision, language);
 output is what the UI shows. No Tk and no internals of the parser/evaluator.
 """
 
+import time
 import unittest
 
 from squareroot.ui import i18n
@@ -54,6 +55,9 @@ class ErrorResults(unittest.TestCase):
         "2 $ 3": "TokenizeError",
         "(": "ParseError",
         "(-8)^(1/3)": "UnsupportedOperationError",
+        "9^9^9^9": "NumberOverflowError",
+        "(" * 2000 + "1" + ")" * 2000: "ExpressionTooComplexError",
+        "1+" * 3000 + "1": "ExpressionTooComplexError",
     }
 
     def test_each_error_is_localized_in_every_language(self):
@@ -80,6 +84,32 @@ class ErrorResults(unittest.TestCase):
         fallback = compute("1/0", {}, 28, language="xx")
         default = compute("1/0", {}, 28, language=i18n.DEFAULT_LANGUAGE)
         self.assertEqual(fallback, default)
+
+
+class FaultTolerance(unittest.TestCase):
+    def test_bad_variable_value_is_a_localized_error(self):
+        for value in ("abc", "nan", "inf", "1,5"):
+            for lang in LANGS:
+                with self.subTest(value=value, lang=lang):
+                    result = compute("x", build_variables([("x", value)]), 28, language=lang)
+                    self.assertEqual(result.state, "error")
+                    self.assertEqual(result.error_type, "InvalidVariableValueError")
+                    self.assertIn("x", result.error_message)
+
+    def test_complex_variable_value_from_ui_row(self):
+        result = compute("x", build_variables([("x", "-7+24i")]), 28)
+        self.assertEqual((result.state, result.value), ("numeric", "3+4i"))
+
+    def test_huge_power_answers_quickly(self):
+        started = time.monotonic()
+        result = compute("1^100000000 + 3", {}, 28)
+        self.assertEqual((result.state, result.value), ("numeric", "2"))
+        self.assertLess(time.monotonic() - started, 5)
+
+    def test_invalid_precision_is_an_error_not_an_exception(self):
+        result = compute("2", {}, 0, language="en")
+        self.assertEqual(result.error_type, "InvalidPrecisionError")
+        self.assertIn("1", result.error_message)
 
 
 if __name__ == "__main__":

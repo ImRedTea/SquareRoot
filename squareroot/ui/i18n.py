@@ -131,6 +131,10 @@ _ERROR_TYPE_LABELS = {
         "DivisionByZeroError": "Деление на ноль",
         "UnknownFunctionError": "Неизвестная функция",
         "UnsupportedOperationError": "Неподдерживаемая операция",
+        "NumberOverflowError": "Переполнение",
+        "ExpressionTooComplexError": "Слишком сложное выражение",
+        "InvalidPrecisionError": "Недопустимая точность",
+        "InvalidVariableValueError": "Недопустимое значение переменной",
     },
     "en": {
         "TokenizeError": "Tokenize error",
@@ -138,6 +142,10 @@ _ERROR_TYPE_LABELS = {
         "DivisionByZeroError": "Division by zero",
         "UnknownFunctionError": "Unknown function",
         "UnsupportedOperationError": "Unsupported operation",
+        "NumberOverflowError": "Overflow",
+        "ExpressionTooComplexError": "Expression too complex",
+        "InvalidPrecisionError": "Invalid precision",
+        "InvalidVariableValueError": "Invalid variable value",
     },
     "es": {
         "TokenizeError": "Error de tokenización",
@@ -145,6 +153,10 @@ _ERROR_TYPE_LABELS = {
         "DivisionByZeroError": "División por cero",
         "UnknownFunctionError": "Función desconocida",
         "UnsupportedOperationError": "Operación no admitida",
+        "NumberOverflowError": "Desbordamiento",
+        "ExpressionTooComplexError": "Expresión demasiado compleja",
+        "InvalidPrecisionError": "Precisión no válida",
+        "InvalidVariableValueError": "Valor de variable no válido",
     },
     "zh": {
         "TokenizeError": "词法错误",
@@ -152,6 +164,10 @@ _ERROR_TYPE_LABELS = {
         "DivisionByZeroError": "除以零",
         "UnknownFunctionError": "未知函数",
         "UnsupportedOperationError": "不支持的操作",
+        "NumberOverflowError": "数值溢出",
+        "ExpressionTooComplexError": "表达式过于复杂",
+        "InvalidPrecisionError": "精度无效",
+        "InvalidVariableValueError": "变量值无效",
     },
     "ja": {
         "TokenizeError": "トークン化エラー",
@@ -159,6 +175,10 @@ _ERROR_TYPE_LABELS = {
         "DivisionByZeroError": "ゼロ除算",
         "UnknownFunctionError": "未知の関数",
         "UnsupportedOperationError": "サポートされていない操作",
+        "NumberOverflowError": "オーバーフロー",
+        "ExpressionTooComplexError": "式が複雑すぎます",
+        "InvalidPrecisionError": "無効な精度",
+        "InvalidVariableValueError": "無効な変数値",
     },
 }
 
@@ -179,6 +199,11 @@ _ERROR_TEMPLATES = {
             "нецелая степень поддерживается только для неотрицательного "
             "вещественного основания и вещественного показателя"
         ),
+        "overflow": "результат слишком велик для представления",
+        "too_complex": "выражение слишком сложное: слишком глубокая вложенность или слишком длинная цепочка операций",
+        "invalid_precision": "точность должна быть целым числом от {min} до {max}",
+        "invalid_variable_value": "значение переменной {name!r} не является конечным числом: {value!r}",
+        "exponent_too_large": "показатель степени длиннее заданной точности: для основания с модулем 1 результат определить нельзя",
     },
     "en": {
         "invalid_number": "invalid number at position {position}",
@@ -192,6 +217,11 @@ _ERROR_TEMPLATES = {
             "a non-integer power is only supported for a non-negative real "
             "base with a real exponent"
         ),
+        "overflow": "the result is too large to represent",
+        "too_complex": "the expression is too complex: nesting too deep or chain of operations too long",
+        "invalid_precision": "precision must be an integer from {min} to {max}",
+        "invalid_variable_value": "the value of variable {name!r} is not a finite number: {value!r}",
+        "exponent_too_large": "the exponent has more digits than the precision: for a base of modulus 1 the result cannot be determined",
     },
     "es": {
         "invalid_number": "número no válido en la posición {position}",
@@ -205,6 +235,11 @@ _ERROR_TEMPLATES = {
             "una potencia no entera solo se admite para una base real no "
             "negativa con un exponente real"
         ),
+        "overflow": "el resultado es demasiado grande para representarlo",
+        "too_complex": "la expresión es demasiado compleja: anidamiento demasiado profundo o cadena de operaciones demasiado larga",
+        "invalid_precision": "la precisión debe ser un número entero entre {min} y {max}",
+        "invalid_variable_value": "el valor de la variable {name!r} no es un número finito: {value!r}",
+        "exponent_too_large": "el exponente tiene más dígitos que la precisión: para una base de módulo 1 no se puede determinar el resultado",
     },
     "zh": {
         "invalid_number": "位置 {position} 处的数字无效",
@@ -217,6 +252,11 @@ _ERROR_TEMPLATES = {
         "non_integer_power_complex_base": (
             "非整数次幂仅支持非负实数底数与实数指数"
         ),
+        "overflow": "结果太大，无法表示",
+        "too_complex": "表达式过于复杂：嵌套过深或运算链过长",
+        "invalid_precision": "精度必须是 {min} 到 {max} 之间的整数",
+        "invalid_variable_value": "变量 {name!r} 的值不是有限数：{value!r}",
+        "exponent_too_large": "指数位数超过精度：对于模为 1 的底数，无法确定结果",
     },
     "ja": {
         "invalid_number": "位置 {position} に無効な数値があります",
@@ -229,6 +269,11 @@ _ERROR_TEMPLATES = {
         "non_integer_power_complex_base": (
             "非整数の指数は、非負の実数の底と実数の指数の場合のみサポートされます"
         ),
+        "overflow": "結果が大きすぎて表現できません",
+        "too_complex": "式が複雑すぎます：入れ子が深すぎるか、演算の連鎖が長すぎます",
+        "invalid_precision": "精度は {min} から {max} までの整数でなければなりません",
+        "invalid_variable_value": "変数 {name!r} の値は有限の数ではありません：{value!r}",
+        "exponent_too_large": "指数の桁数が精度を超えています：絶対値が 1 の底では結果を決定できません",
     },
 }
 
@@ -264,6 +309,8 @@ TRANSLATIONS = {
         ),
         "header.symbolic_suffix": " упрощается до",
         "hint.provide_value": "Укажите значение свободной переменной(ых) выше, чтобы получить число.",
+        "error.internal.label": "Внутренняя ошибка",
+        "error.internal.message": "непредвиденная ошибка программы ({name}); вычисление прервано, приложение продолжает работать",
     },
     "en": {
         "menu.file": "File",
@@ -295,6 +342,8 @@ TRANSLATIONS = {
         ),
         "header.symbolic_suffix": " simplifies to",
         "hint.provide_value": "Provide a value for the free variable(s) above to get a number.",
+        "error.internal.label": "Internal error",
+        "error.internal.message": "unexpected program error ({name}); the calculation was aborted, the app keeps running",
     },
     "es": {
         "menu.file": "Archivo",
@@ -326,6 +375,8 @@ TRANSLATIONS = {
         ),
         "header.symbolic_suffix": " se simplifica a",
         "hint.provide_value": "Indique un valor para la(s) variable(s) libre(s) de arriba para obtener un número.",
+        "error.internal.label": "Error interno",
+        "error.internal.message": "error inesperado del programa ({name}); se interrumpió el cálculo, la aplicación sigue funcionando",
     },
     "zh": {
         "menu.file": "文件",
@@ -354,6 +405,8 @@ TRANSLATIONS = {
         ),
         "header.symbolic_suffix": " 化简为",
         "hint.provide_value": "请为上面的自由变量提供值以获得数值结果。",
+        "error.internal.label": "内部错误",
+        "error.internal.message": "程序发生意外错误（{name}）；计算已中止，应用仍可继续使用",
     },
     "ja": {
         "menu.file": "ファイル",
@@ -382,6 +435,8 @@ TRANSLATIONS = {
         ),
         "header.symbolic_suffix": " を簡略化すると",
         "hint.provide_value": "数値を得るには、上の自由変数に値を指定してください。",
+        "error.internal.label": "内部エラー",
+        "error.internal.message": "予期しないプログラムエラー（{name}）。計算は中止されましたが、アプリは引き続き動作します",
     },
 }
 

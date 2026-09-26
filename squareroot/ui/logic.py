@@ -47,22 +47,29 @@ def compute(radicand, variables, precision, language=i18n.DEFAULT_LANGUAGE):
     expression = f"sqrt({radicand})"
     try:
         result = squareroot.evaluate(expression, variables=variables, precision=precision)
+        value = str(result)
     except SquareRootError as e:
-        return ComputeResult(
-            state="error",
-            header=f"√({radicand})",
-            value="",
-            error_type=type(e).__name__,
-            error_type_label=i18n.error_type_label(language, e),
-            error_message=i18n.translate_error(language, e),
-            hint="",
+        return _error_result(
+            radicand,
+            type(e).__name__,
+            i18n.error_type_label(language, e),
+            i18n.translate_error(language, e),
+        )
+    except Exception as e:
+        # Last line of defence: an exception escaping into a Tk callback is
+        # invisible to the user, so any bug must still surface as an error.
+        return _error_result(
+            radicand,
+            "InternalError",
+            i18n.translate(language, "error.internal.label"),
+            i18n.translate(language, "error.internal.message", name=type(e).__name__),
         )
 
     if isinstance(result, Complex):
         return ComputeResult(
             state="numeric",
             header=f"√({radicand}) =",
-            value=str(result),
+            value=value,
             error_type="",
             error_type_label="",
             error_message="",
@@ -72,9 +79,21 @@ def compute(radicand, variables, precision, language=i18n.DEFAULT_LANGUAGE):
     return ComputeResult(
         state="symbolic",
         header=f"√({radicand}){i18n.translate(language, 'header.symbolic_suffix')}",
-        value=str(result),
+        value=value,
         error_type="",
         error_type_label="",
         error_message="",
         hint=i18n.translate(language, "hint.provide_value"),
+    )
+
+
+def _error_result(radicand, error_type, label, message):
+    return ComputeResult(
+        state="error",
+        header=f"√({radicand})",
+        value="",
+        error_type=error_type,
+        error_type_label=label,
+        error_message=message,
+        hint="",
     )
