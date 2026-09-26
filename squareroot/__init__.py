@@ -1,10 +1,14 @@
 __version__ = "0.1.0"
 
-from .api import DEFAULT_PRECISION, evaluate
+from .api import DEFAULT_PRECISION, MAX_PRECISION, MIN_PRECISION, evaluate
 from .complex_number import Complex
 from .errors import (
     DivisionByZeroError,
     EvaluationError,
+    ExpressionTooComplexError,
+    InvalidPrecisionError,
+    InvalidVariableValueError,
+    NumberOverflowError,
     ParseError,
     SquareRootError,
     TokenizeError,
@@ -18,6 +22,8 @@ __all__ = [
     "Complex",
     "Expression",
     "DEFAULT_PRECISION",
+    "MIN_PRECISION",
+    "MAX_PRECISION",
     "SquareRootError",
     "TokenizeError",
     "ParseError",
@@ -25,4 +31,8 @@ __all__ = [
     "DivisionByZeroError",
     "UnknownFunctionError",
     "UnsupportedOperationError",
+    "NumberOverflowError",
+    "ExpressionTooComplexError",
+    "InvalidPrecisionError",
+    "InvalidVariableValueError",
 ]

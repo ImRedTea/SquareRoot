@@ -5,8 +5,9 @@ special-case power rules, Expression dunder methods and expression rendering.
 
 import unittest
 from decimal import Decimal
+from unittest import mock
 
-from squareroot import Complex, DivisionByZeroError, Expression, evaluate
+from squareroot import Complex, DivisionByZeroError, Expression, ExpressionTooComplexError, evaluate
 
 
 class ComplexCoercion(unittest.TestCase):
@@ -113,6 +114,13 @@ class SimplifyAndRender(unittest.TestCase):
     def test_substitution_into_every_node_kind(self):
         result = evaluate("sqrt(-x + (x+1)^2 - x/2)", variables={"x": "2"})
         self.assertEqual(result, evaluate("sqrt(6)"))
+
+
+class RecursionFallback(unittest.TestCase):
+    def test_recursion_error_past_the_depth_limits_becomes_too_complex(self):
+        with mock.patch("squareroot.api.simplify", side_effect=RecursionError):
+            with self.assertRaises(ExpressionTooComplexError):
+                evaluate("1+1")
 
 
 if __name__ == "__main__":

@@ -7,13 +7,19 @@ from running the implementation. Cases are grouped by equivalence class,
 with boundary values called out explicitly.
 """
 
+import time
 import unittest
+from decimal import Decimal
 
 import squareroot
 from squareroot import (
     Complex,
     DivisionByZeroError,
     Expression,
+    ExpressionTooComplexError,
+    InvalidPrecisionError,
+    InvalidVariableValueError,
+    NumberOverflowError,
     ParseError,
     SquareRootError,
     TokenizeError,
@@ -80,11 +86,16 @@ class PrecisionBoundaries(unittest.TestCase):
         long = str(evaluate("sqrt(3)", precision=60))
         self.assertTrue(long.startswith(short[:-1]))
 
-    def test_precision_below_range_is_rejected(self):
-        for bad in (0, -1):
+    def test_precision_outside_range_is_rejected(self):
+        for bad in (0, -1, squareroot.MAX_PRECISION + 1, 2.5, "10", True):
             with self.subTest(precision=bad):
-                with self.assertRaises(ValueError):
+                with self.assertRaises(InvalidPrecisionError):
                     evaluate("sqrt(2)", precision=bad)
+
+    def test_precision_range_boundaries_are_accepted(self):
+        for good in (squareroot.MIN_PRECISION, squareroot.MAX_PRECISION):
+            with self.subTest(precision=good):
+                self.assertIsInstance(evaluate("sqrt(2)", precision=good), Complex)
 
     def test_default_precision_constant(self):
         self.assertEqual(squareroot.DEFAULT_PRECISION, 28)
@@ -179,6 +190,89 @@ class AlgebraicProperties(unittest.TestCase):
         self.assertEqual(evaluate("sqrt(-7+24i)"), evaluate("sqrt(-7+24i)"))
         # (3+4i)^2 = -7+24i
         self.assertEqual(evaluate("sqrt(-7+24i)"), Complex(3, 4))
+
+
+class FaultTolerance(unittest.TestCase):
+    """Hostile or extreme input must end in a SquareRootError, quickly."""
+
+    def assertFast(self, started):
+        self.assertLess(time.monotonic() - started, 5)
+
+    def test_overflow(self):
+        for expr in ("9^9^9^9", "10^999999999", "sqrt(2)^100000000", "2^(10^999999)", "(1+i)^(10^50)"):
+            with self.subTest(expr=expr):
+                started = time.monotonic()
+                with self.assertRaises(NumberOverflowError):
+                    evaluate(expr)
+                self.assertFast(started)
+
+    def test_huge_integer_powers_are_fast_and_exact(self):
+        for expr, expected in [
+            ("1^100000000", "1"),
+            ("i^10000000", "1"),
+            ("i^100000001", "i"),
+            ("i^(10^19+3)", "-i"),
+            ("(-i)^(-(10^20+1))", "i"),
+            ("1^(10^999999)", "1"),
+            ("0.5^100000000", "0"),
+            ("0.5^(10^999999)", "0"),
+            ("2^(-(10^999999))", "0"),
+        ]:
+            with self.subTest(expr=expr):
+                started = time.monotonic()
+                self.assertEqual(str(evaluate(expr)), expected)
+                self.assertFast(started)
+
+    def test_unit_modulus_base_with_exponent_beyond_precision_is_rejected(self):
+        # 10^999999+10 rounds to 10^999999 at 28 digits, so n mod 4 is lost.
+        for expr in ("(0.6+0.8i)^(10^50)", "(-1)^(10^999999)", "i^(10^999999+10)"):
+            with self.subTest(expr=expr):
+                with self.assertRaises(UnsupportedOperationError) as ctx:
+                    evaluate(expr)
+                self.assertEqual(ctx.exception.code, "exponent_too_large")
+
+    def test_too_deep_or_too_long(self):
+        for expr in (
+            "(" * 2000 + "1" + ")" * 2000,
+            "-" * 3000 + "1",
+            "2^" * 3000 + "1",
+            "1+" * 3000 + "1",
+            "sqrt(" * 500 + "4" + ")" * 500,
+        ):
+            with self.subTest(expr=expr[:12]):
+                with self.assertRaises(ExpressionTooComplexError):
+                    evaluate(expr)
+
+    def test_reasonable_depth_and_length_still_work(self):
+        self.assertEqual(evaluate("(" * 90 + "4" + ")" * 90), Complex(4))
+        self.assertEqual(evaluate("1+" * 139 + "1"), Complex(140))
+        self.assertEqual(str(evaluate("x*" * 139 + "x", variables={"x": "1"})), "1")
+
+    def test_invalid_variable_values(self):
+        for value in ("abc", "", "inf", "-inf", "nan", "1,5", "2+", Decimal("NaN")):
+            with self.subTest(value=value):
+                with self.assertRaises(InvalidVariableValueError) as ctx:
+                    evaluate("x", variables={"x": value})
+                self.assertEqual(ctx.exception.params["name"], "x")
+
+    def test_complex_and_exponent_variable_values(self):
+        self.assertEqual(evaluate("sqrt(x)", variables={"x": "-7+24i"}), Complex(3, 4))
+        self.assertEqual(evaluate("x", variables={"x": "1e5"}), Complex(100000))
+
+    def test_overflowing_variable_value(self):
+        with self.assertRaises(NumberOverflowError):
+            evaluate("x*x", variables={"x": "1e999999"})
+
+    def test_expression_substitute_is_guarded_too(self):
+        expr = evaluate("x^x")
+        with self.assertRaises(NumberOverflowError):
+            expr.substitute({"x": 10**6})
+        with self.assertRaises(InvalidVariableValueError):
+            expr.substitute({"x": "nan"})
+
+    def test_every_new_error_is_a_squareroot_error(self):
+        for cls in (NumberOverflowError, ExpressionTooComplexError, InvalidPrecisionError, InvalidVariableValueError):
+            self.assertTrue(issubclass(cls, SquareRootError))
 
 
 if __name__ == "__main__":

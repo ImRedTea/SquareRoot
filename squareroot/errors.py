@@ -34,3 +34,19 @@ class UnknownFunctionError(EvaluationError):
 
 class UnsupportedOperationError(EvaluationError):
     """Raised for an operation this core does not (yet) support."""
+
+
+class NumberOverflowError(EvaluationError):
+    """Raised when an intermediate or final value exceeds the decimal range."""
+
+
+class ExpressionTooComplexError(SquareRootError):
+    """Raised when an expression is nested too deeply or chained too long to evaluate."""
+
+
+class InvalidPrecisionError(SquareRootError):
+    """Raised when the requested precision is not an integer in the supported range."""
+
+
+class InvalidVariableValueError(SquareRootError):
+    """Raised when a variable's value is not a finite real or complex number."""

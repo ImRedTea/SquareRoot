@@ -1,3 +1,4 @@
+import decimal
 from decimal import Decimal
 
 from .errors import DivisionByZeroError, UnsupportedOperationError
@@ -107,17 +108,41 @@ class Complex:
     def __pow__(self, exponent):
         exponent = self._coerce(exponent)
         if exponent.imag == 0 and exponent.real == exponent.real.to_integral_value():
+            if exponent.real.adjusted() >= decimal.getcontext().prec:
+                return self._huge_int_power(exponent.real)
             return self._int_power(int(exponent.real))
         return self._real_power(exponent)
+
+    def _huge_int_power(self, n):
+        # n has more integer digits than the precision: int(n) could take
+        # minutes (n ~ 10^999999) and its low digits may already be rounded
+        # away. Only the modulus still decides the result reliably.
+        norm = self.real * self.real + self.imag * self.imag
+        if norm != 1:
+            if (norm > 1) == (n > 0):
+                raise decimal.Overflow("integer power overflows")
+            return Complex(0, 0)
+        if self.real == 1 and self.imag == 0:
+            return Complex(1, 0)
+        raise UnsupportedOperationError(
+            "the exponent has more digits than the precision; for a base of "
+            "modulus 1 the result cannot be determined",
+            code="exponent_too_large",
+        )
 
     def _int_power(self, n):
         if n == 0:
             return Complex(1, 0)
         base = self if n > 0 else Complex(1, 0) / self
+        n = abs(n)
         result = Complex(1, 0)
-        for _ in range(abs(n)):
-            result = result * base
-        return result
+        while True:
+            if n & 1:
+                result = result * base
+            n >>= 1
+            if not n:
+                return result
+            base = base * base
 
     def _real_power(self, exponent):
         if self.imag != 0 or self.real < 0 or exponent.imag != 0:

@@ -3,7 +3,14 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from .complex_number import Complex
-from .errors import ParseError, TokenizeError
+from .errors import ExpressionTooComplexError, ParseError, TokenizeError
+
+# Parser, simplifier and renderer are recursive; these limits keep them well
+# inside Python's default recursion limit (1000 frames) even when called from
+# a GUI callback. Each nesting level costs ~5 parser frames; a symbolic
+# product chain overflows the simplifier at ~200 tree levels.
+MAX_NESTING = 100
+MAX_TREE_DEPTH = 150
 
 _NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
 _IDENT_RE = re.compile(r"[A-Za-z]+")
@@ -119,10 +126,13 @@ class Parser:
     def __init__(self, tokens):
         self._tokens = tokens
         self._pos = 0
+        self._nesting = 0
 
     def parse(self):
         node = self._expression()
         self._expect("EOF")
+        if _tree_depth(node) > MAX_TREE_DEPTH:
+            raise _too_complex()
         return node
 
     def _peek(self):
@@ -160,10 +170,17 @@ class Parser:
         return node
 
     def _unary(self):
-        if self._peek().type in ("PLUS", "MINUS"):
-            op = self._advance()
-            return UnaryOp(op.value, self._unary())
-        return self._power()
+        # Every recursive path (parentheses, calls, unary signs, ^) passes here.
+        self._nesting += 1
+        if self._nesting > MAX_NESTING:
+            raise _too_complex()
+        try:
+            if self._peek().type in ("PLUS", "MINUS"):
+                op = self._advance()
+                return UnaryOp(op.value, self._unary())
+            return self._power()
+        finally:
+            self._nesting -= 1
 
     def _power(self):
         node = self._primary()
@@ -200,6 +217,30 @@ class Parser:
             found=token.type,
             position=token.pos,
         )
+
+
+def _too_complex():
+    return ExpressionTooComplexError(
+        f"expression is too complex (nesting over {MAX_NESTING} "
+        f"or tree depth over {MAX_TREE_DEPTH})",
+        code="too_complex",
+    )
+
+
+def _tree_depth(root):
+    deepest = 0
+    stack = [(root, 1)]
+    while stack:
+        node, depth = stack.pop()
+        deepest = max(deepest, depth)
+        if isinstance(node, UnaryOp):
+            stack.append((node.operand, depth + 1))
+        elif isinstance(node, BinOp):
+            stack.append((node.left, depth + 1))
+            stack.append((node.right, depth + 1))
+        elif isinstance(node, Call):
+            stack.append((node.arg, depth + 1))
+    return deepest
 
 
 def parse(text):
