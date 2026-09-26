@@ -1,8 +1,13 @@
 # Build
 
-The app is distributed as portable binaries (no installer). It writes nothing
-to disk (the UI language comes from the system locale), so deleting the binary
-removes it completely.
+The app is distributed as portable binaries (no installer). It stores no
+settings or data (the UI language comes from the system locale), so deleting
+the binary removes it. The only thing a onefile build ever writes is its
+PyInstaller extraction folder `_MEIxxxx` in the temp directory, deleted on
+exit; after a crash it may remain. The folder contains the marker file
+`SQUAREROOT_BUNDLE`, and `packaging/uninstall/uninstall.sh` / `uninstall.ps1`
+remove it (plus the binary and macOS saved window state) without touching
+other PyInstaller apps. The scripts are attached to every GitHub Release.
 
 ## Release (CI)
 

@@ -15,10 +15,12 @@ from .errors import (
     UnknownFunctionError,
     UnsupportedOperationError,
 )
+from .exact import exact_sqrt
 from .expression import Expression
 
 __all__ = [
     "evaluate",
+    "exact_sqrt",
     "Complex",
     "Expression",
     "DEFAULT_PRECISION",

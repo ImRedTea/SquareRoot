@@ -114,3 +114,17 @@ class FaultTolerance(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExactFormInGui(unittest.TestCase):
+    def test_irrational_root_shows_closed_form(self):
+        self.assertEqual(compute("8", {}, 28).exact, "2√2")
+        self.assertEqual(compute("x", {"x": "-12"}, 28).exact, "2i√3")
+
+    def test_rational_symbolic_and_error_results_have_none(self):
+        self.assertEqual(compute("16", {}, 28).exact, "")
+        self.assertEqual(compute("x", {}, 28).exact, "")
+        self.assertEqual(compute("1/0", {}, 28).exact, "")
+
+    def test_gui_accepts_full_api_precision_range(self):
+        self.assertEqual(len(compute("2", {}, 1000).value.replace(".", "")), 1000)

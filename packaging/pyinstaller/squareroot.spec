@@ -5,7 +5,14 @@ import sys
 sys.path.insert(0, SPECPATH + "/../..")
 from squareroot import __version__
 
-a = Analysis(["../../run_gui.py"], pathex=["../.."])
+# SQUAREROOT_BUNDLE marks the onefile extraction folder (_MEIxxxx) as ours,
+# so packaging/uninstall/* can remove a leftover one without touching other
+# PyInstaller apps' folders.
+a = Analysis(
+    ["../../run_gui.py"],
+    pathex=["../.."],
+    datas=[(SPECPATH + "/SQUAREROOT_BUNDLE", ".")],
+)
 pyz = PYZ(a.pure)
 
 if sys.platform == "darwin":

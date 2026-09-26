@@ -10,6 +10,8 @@ Run everything: `python -m unittest discover -s tests -t .`
 | Black box, GUI logic | `ui.logic.compute` as a user sees it, all 5 languages | `test_blackbox_gui_logic.py` |
 | Black box, fault tolerance | hostile/extreme input must end in a `SquareRootError` within 5 s: overflow (`9^9^9^9`, `10^999999999`), huge integer powers (`1^100000000`, `i^(10^19+3)`), deep nesting / long chains, invalid precision (0, -1, 1001, 2.5, `True`), invalid variable values (`abc`, `nan`, `inf`, `1,5`) | `test_blackbox_api.py` (`FaultTolerance`), `test_blackbox_gui_logic.py` (`FaultTolerance`) |
 | White box, safety nets | `RecursionError` past the explicit depth limits → `ExpressionTooComplexError`; any unexpected exception in the GUI logic → localized "Internal error" instead of a silent Tk callback failure | `test_whitebox_gaps.py`, `test_ui_logic.py` |
+| Exact form (white + black box) | closed forms checked against known values and numerically against `evaluate` to 40 digits; unsupported input returns `None`, never raises | `test_exact.py`, `test_blackbox_gui_logic.py` (`ExactFormInGui`) |
+| Update check (network mocked) | version parsing, newer/same/failed release lookups, localized dialog text in all languages | `test_updates.py` |
 | Localisation | key parity across ru/en/es/zh/ja, every error code rendered, locale detection | `test_i18n.py` |
 
 ## Coverage
@@ -28,6 +30,7 @@ CI fails below 95%.
 |---|---|---|
 | 2026-09-26 | 160 | 97% |
 | 2026-09-26 (fault tolerance) | 177 | 98% |
+| 2026-09-26 (exact form, updates) | 197 | 98% |
 
 ## Fault tolerance
 

@@ -38,6 +38,7 @@ class ComputeResult:
     error_type_label: str  # localized display label for error_type
     error_message: str
     hint: str
+    exact: str = ""  # closed form such as "2√2"; "" when there is none
 
 
 def compute(radicand, variables, precision, language=i18n.DEFAULT_LANGUAGE):
@@ -66,6 +67,7 @@ def compute(radicand, variables, precision, language=i18n.DEFAULT_LANGUAGE):
         )
 
     if isinstance(result, Complex):
+        exact = squareroot.exact_sqrt(radicand, variables) or ""
         return ComputeResult(
             state="numeric",
             header=f"√({radicand}) =",
@@ -74,6 +76,7 @@ def compute(radicand, variables, precision, language=i18n.DEFAULT_LANGUAGE):
             error_type_label="",
             error_message="",
             hint="",
+            exact=exact,
         )
 
     return ComputeResult(
@@ -97,3 +100,29 @@ def _error_result(radicand, error_type, label, message):
         error_message=message,
         hint="",
     )
+
+
+@dataclass(frozen=True)
+class UpdateMessage:
+    kind: str  # "available" | "latest" | "error"
+    title: str
+    message: str
+    url: str  # release page to open when kind == "available", else ""
+
+
+def describe_update(check, language=i18n.DEFAULT_LANGUAGE):
+    """Run `check()` (updates.check_for_update) and turn the outcome into a
+    localized dialog text. Never raises: any failure is kind="error"."""
+    title = i18n.translate(language, "dialog.update.title")
+    try:
+        info = check()
+        newer = info.is_newer
+    except Exception:
+        return UpdateMessage("error", title, i18n.translate(language, "dialog.update.error"), "")
+    if newer:
+        text = i18n.translate(
+            language, "dialog.update.available", latest=info.latest, current=info.current
+        )
+        return UpdateMessage("available", title, text, info.url)
+    text = i18n.translate(language, "dialog.update.latest", current=info.current)
+    return UpdateMessage("latest", title, text, "")

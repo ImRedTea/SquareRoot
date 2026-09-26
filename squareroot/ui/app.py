@@ -1,13 +1,17 @@
 """tkinter/ttk desktop GUI for the SquareRoot complex-square-root calculator."""
 
+import queue
 import sys
+import threading
 import tkinter as tk
+import webbrowser
 import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
 import squareroot
 from squareroot.ui import i18n
-from squareroot.ui.logic import build_variables, compute
+from squareroot import updates
+from squareroot.ui.logic import build_variables, compute, describe_update
 
 IS_MAC = sys.platform == "darwin"
 
@@ -17,8 +21,9 @@ ACCENT_PRESSED = "#115e59"
 ERROR_COLOR = "#a5382f"
 SYMBOLIC_COLOR = "#7c8a38"
 
-MIN_PRECISION = 1
-MAX_PRECISION = 100
+# Same limits as the library API (squareroot.evaluate), so GUI and API agree.
+MIN_PRECISION = squareroot.MIN_PRECISION
+MAX_PRECISION = squareroot.MAX_PRECISION
 
 
 def _configure_style(root):
@@ -188,6 +193,10 @@ class SquareRootApp:
         menubar.add_cascade(label=self._t("menu.language"), menu=language_menu)
 
         help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(
+            label=self._t("menu.help.check_updates"), command=self._check_updates
+        )
+        help_menu.add_separator()
         help_menu.add_command(label=self._t("menu.help.about"), command=self._show_about)
         menubar.add_cascade(label=self._t("menu.help"), menu=help_menu)
 
@@ -309,7 +318,9 @@ class SquareRootApp:
         self.result_error_badge = ttk.Label(
             content, font=self.fonts["header"], foreground=ERROR_COLOR
         )
-        self.result_value_label = ttk.Label(content, font=self.fonts["result"])
+        # wraplength: up to 1000 significant digits must not widen the window.
+        self.result_value_label = ttk.Label(content, font=self.fonts["result"], wraplength=500)
+        self.result_exact_label = ttk.Label(content, font=self.fonts["expr"], foreground=ACCENT)
         self.result_hint_label = ttk.Label(
             content, font=self.fonts["section"], foreground="#85857f", wraplength=480
         )
@@ -354,7 +365,7 @@ class SquareRootApp:
         self._last_result = result
         self._render_result(result, precision)
 
-    def _pack_result_body(self, show_badge, show_hint):
+    def _pack_result_body(self, show_badge, show_hint, show_exact=False):
         # Re-pack header/[badge]/value/[hint] together, in this fixed order,
         # every render -- pack() stacks in call order, so toggling a widget
         # back on with a bare .pack() after another was already packed would
@@ -362,9 +373,12 @@ class SquareRootApp:
         self.result_error_badge.pack_forget()
         self.result_value_label.pack_forget()
         self.result_hint_label.pack_forget()
+        self.result_exact_label.pack_forget()
         if show_badge:
             self.result_error_badge.pack(anchor="w", pady=(2, 0))
         self.result_value_label.pack(anchor="w", pady=(2, 0))
+        if show_exact:
+            self.result_exact_label.pack(anchor="w", pady=(4, 0))
         if show_hint:
             self.result_hint_label.pack(anchor="w", pady=(4, 0))
 
@@ -382,7 +396,13 @@ class SquareRootApp:
             self.result_accent.configure(bg=ACCENT)
             self.result_header_label.configure(text=result.header)
             self.result_value_label.configure(text=result.value, foreground="#1e1e1c")
-            self._pack_result_body(show_badge=False, show_hint=False)
+            if result.exact:
+                self.result_exact_label.configure(
+                    text=self._t("result.exact", value=result.exact)
+                )
+            self._pack_result_body(
+                show_badge=False, show_hint=False, show_exact=bool(result.exact)
+            )
             self.status_var.set(self._t("status.ok"))
         elif result.state == "symbolic":
             self.result_accent.configure(bg=SYMBOLIC_COLOR)
@@ -420,6 +440,31 @@ class SquareRootApp:
             self._t("dialog.about.title"),
             self._t("dialog.about.message"),
         )
+
+    def _check_updates(self):
+        # Network call in a worker thread; Tk is touched only from the main
+        # thread (via after()), so the window never freezes.
+        results = queue.Queue()
+        language = self.language
+        threading.Thread(
+            target=lambda: results.put(describe_update(updates.check_for_update, language)),
+            daemon=True,
+        ).start()
+        self.root.after(100, self._poll_update_result, results)
+
+    def _poll_update_result(self, results):
+        try:
+            msg = results.get_nowait()
+        except queue.Empty:
+            self.root.after(100, self._poll_update_result, results)
+            return
+        if msg.kind == "available":
+            if messagebox.askyesno(msg.title, msg.message):
+                webbrowser.open(msg.url)
+        elif msg.kind == "latest":
+            messagebox.showinfo(msg.title, msg.message)
+        else:
+            messagebox.showwarning(msg.title, msg.message)
 
     def _set_language(self, code):
         if code == self.language:
