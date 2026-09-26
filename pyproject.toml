@@ -18,3 +18,12 @@ version = { attr = "squareroot.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["squareroot*"]
+
+[tool.coverage.run]
+branch = true
+source = ["squareroot"]
+# Tk widget code: not testable headless; logic lives in ui/logic.py + ui/i18n.py.
+omit = ["squareroot/ui/app.py", "squareroot/ui/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true

@@ -6,7 +6,7 @@ import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
 import squareroot
-from squareroot.ui import i18n, settings
+from squareroot.ui import i18n
 from squareroot.ui.logic import build_variables, compute
 
 IS_MAC = sys.platform == "darwin"
@@ -145,7 +145,7 @@ class SquareRootApp:
         self.fonts = _build_fonts()
 
         self._last_result = None
-        self.language = settings.load_language()
+        self.language = i18n.detect_language()
 
         self.expression_var = tk.StringVar(value="")
         self.precision_var = tk.IntVar(value=squareroot.DEFAULT_PRECISION)
@@ -426,7 +426,6 @@ class SquareRootApp:
             return
         self.language = code
         self.language_var.set(code)
-        settings.save_language(code)
         self._apply_language()
 
     def _apply_language(self):

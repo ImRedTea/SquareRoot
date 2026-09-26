@@ -1,7 +1,7 @@
 # Build & Packaging Plan (RoadMap item 9)
 
 > **Decision update:** no installers. The app is a portable single-file
-> binary that leaves nothing behind (except `~/.squareroot/config.json`),
+> binary that leaves nothing behind (settings persistence was removed),
 > so the `.deb` and Arch `PKGBUILD` were dropped. Shipped artifacts: Linux
 > binary, Windows `.exe`, macOS `.dmg` (all built on GitHub Actions). See
 > `docs/Build.md`. Sections below on `.deb`/`PKGBUILD` are historical.

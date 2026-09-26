@@ -1,6 +1,7 @@
 import unittest
 
 import squareroot
+from squareroot.ui import i18n
 from squareroot.ui.logic import build_variables, compute
 
 
@@ -75,12 +76,16 @@ class ComputeLanguageTests(unittest.TestCase):
         result = compute("a^2", {}, 28, language="zh")
         self.assertEqual(result.header, "√(a^2) 化简为")
 
+    def test_spanish_symbolic_result(self):
+        result = compute("a^2", {}, 28, language="es")
+        self.assertEqual(result.header, "√(a^2) se simplifica a")
+
     def test_japanese_symbolic_result(self):
         result = compute("a^2", {}, 28, language="ja")
         self.assertEqual(result.header, "√(a^2) を簡略化すると")
 
     def test_error_type_stable_across_languages(self):
-        for language in ("ru", "en", "zh", "ja"):
+        for language in i18n.LANGUAGES:
             result = compute("1/0", {}, 28, language=language)
             self.assertEqual(result.error_type, "DivisionByZeroError")
 

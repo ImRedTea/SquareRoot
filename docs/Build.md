@@ -1,7 +1,8 @@
 # Build
 
-The app is distributed as portable binaries (no installer). Settings are the
-only thing it writes: `~/.squareroot/config.json` (chosen language).
+The app is distributed as portable binaries (no installer). It writes nothing
+to disk (the UI language comes from the system locale), so deleting the binary
+removes it completely.
 
 ## Release (CI)
 

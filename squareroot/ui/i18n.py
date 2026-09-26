@@ -4,14 +4,51 @@ No `tkinter` import here -- like `ui.logic`, this module must stay
 importable and unit-testable on systems where Tk is not installed.
 """
 
+import locale
+import os
+
 LANGUAGES = {
     "ru": "Русский",
     "en": "English",
+    "es": "Español",
     "zh": "中文",
     "ja": "日本語",
 }
 
 DEFAULT_LANGUAGE = "ru"
+
+# Language-name prefixes as reported by Windows (e.g. "Russian_Russia").
+_WINDOWS_LANGUAGE_NAMES = {
+    "russian": "ru",
+    "english": "en",
+    "spanish": "es",
+    "chinese": "zh",
+    "japanese": "ja",
+}
+
+
+def detect_language(environ=None, getlocale=locale.getlocale):
+    """Pick a UI language from the system locale; never touches the disk.
+
+    Checks LC_ALL, LC_MESSAGES, LANG, then `getlocale()`. Falls back to
+    DEFAULT_LANGUAGE for anything unrecognised ("C", "POSIX", empty, ...).
+    """
+    environ = os.environ if environ is None else environ
+    candidates = [environ.get(name) for name in ("LC_ALL", "LC_MESSAGES", "LANG")]
+    try:
+        candidates.append(getlocale()[0])
+    except (ValueError, TypeError, IndexError):
+        pass
+    for value in candidates:
+        if not value:
+            continue
+        value = value.lower()
+        code = value.split("_", 1)[0].split(".", 1)[0]
+        if code in LANGUAGES:
+            return code
+        if code in _WINDOWS_LANGUAGE_NAMES:
+            return _WINDOWS_LANGUAGE_NAMES[code]
+    return DEFAULT_LANGUAGE
 
 # Human labels for the parser's grammar-terminal token types, used inside
 # the expected_token/unexpected_token error templates so a parse error
@@ -42,6 +79,19 @@ _TOKEN_LABELS = {
         "IMAG": "imaginary number",
         "IDENT": "identifier",
         "EOF": "end of expression",
+    },
+    "es": {
+        "PLUS": "«+»",
+        "MINUS": "«-»",
+        "STAR": "«*»",
+        "SLASH": "«/»",
+        "CARET": "«^»",
+        "LPAREN": "«(»",
+        "RPAREN": "«)»",
+        "NUMBER": "número",
+        "IMAG": "número imaginario",
+        "IDENT": "identificador",
+        "EOF": "fin de la expresión",
     },
     "zh": {
         "PLUS": "“+”",
@@ -89,6 +139,13 @@ _ERROR_TYPE_LABELS = {
         "UnknownFunctionError": "Unknown function",
         "UnsupportedOperationError": "Unsupported operation",
     },
+    "es": {
+        "TokenizeError": "Error de tokenización",
+        "ParseError": "Error de análisis",
+        "DivisionByZeroError": "División por cero",
+        "UnknownFunctionError": "Función desconocida",
+        "UnsupportedOperationError": "Operación no admitida",
+    },
     "zh": {
         "TokenizeError": "词法错误",
         "ParseError": "解析错误",
@@ -134,6 +191,19 @@ _ERROR_TEMPLATES = {
         "non_integer_power_complex_base": (
             "a non-integer power is only supported for a non-negative real "
             "base with a real exponent"
+        ),
+    },
+    "es": {
+        "invalid_number": "número no válido en la posición {position}",
+        "unexpected_character": "carácter inesperado {char!r} en la posición {position}",
+        "expected_token": "se esperaba {expected} pero se encontró {found} en la posición {position}",
+        "unexpected_token": "token inesperado {found} en la posición {position}",
+        "unknown_function": "función desconocida {name!r}",
+        "division_by_zero": "división por cero",
+        "zero_to_nonpositive_power": "0 no se puede elevar a una potencia no positiva",
+        "non_integer_power_complex_base": (
+            "una potencia no entera solo se admite para una base real no "
+            "negativa con un exponente real"
         ),
     },
     "zh": {
@@ -225,6 +295,37 @@ TRANSLATIONS = {
         ),
         "header.symbolic_suffix": " simplifies to",
         "hint.provide_value": "Provide a value for the free variable(s) above to get a number.",
+    },
+    "es": {
+        "menu.file": "Archivo",
+        "menu.file.quit": "Salir",
+        "menu.edit": "Edición",
+        "menu.edit.copy_result": "Copiar resultado",
+        "menu.help": "Ayuda",
+        "menu.help.about": "Acerca de SquareRoot",
+        "menu.language": "Idioma",
+        "section.expression": "EXPRESIÓN (BAJO LA RAÍZ CUADRADA)",
+        "section.precision": "PRECISIÓN",
+        "section.variables": "VARIABLES",
+        "section.variables_hint": "se sustituyen en el resultado simplificado",
+        "button.evaluate": "Calcular raíz cuadrada",
+        "result.ready": "Listo.",
+        "status.ready": "Listo",
+        "status.ok": "OK",
+        "status.symbolic": "Simbólico",
+        "status.precision": "decimal · precisión {precision}",
+        "dialog.invalid_precision.title": "Precisión no válida",
+        "dialog.invalid_precision.message": (
+            "La precisión debe ser un número entero entre {min} y {max}."
+        ),
+        "dialog.about.title": "Acerca de SquareRoot",
+        "dialog.about.message": (
+            "SquareRoot — calculadora de raíz cuadrada compleja\n"
+            "Aritmética decimal exacta y simplificación analítica, "
+            "solo con la biblioteca estándar de Python."
+        ),
+        "header.symbolic_suffix": " se simplifica a",
+        "hint.provide_value": "Indique un valor para la(s) variable(s) libre(s) de arriba para obtener un número.",
     },
     "zh": {
         "menu.file": "文件",
