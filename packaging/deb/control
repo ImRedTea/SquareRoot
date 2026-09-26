@@ -1,0 +1,9 @@
+Package: squareroot
+Version: @VERSION@
+Section: math
+Priority: optional
+Architecture: all
+Depends: python3 (>= 3.9), python3-tk
+Maintainer: ImRedTea <leha121276@gmail.com>
+Description: Complex-number calculator with arbitrary-precision square roots
+ Graphical calculator supporting complex arithmetic and square roots.

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "squareroot"
+dynamic = ["version"]
+description = "Complex-number calculator with arbitrary-precision square roots"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.gui-scripts]
+squareroot-gui = "squareroot.ui.app:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "squareroot.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["squareroot*"]

@@ -1,3 +1,5 @@
+__version__ = "0.1.0"
+
 from .api import DEFAULT_PRECISION, evaluate
 from .complex_number import Complex
 from .errors import (
