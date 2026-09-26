@@ -21,9 +21,16 @@ git tag v0.1.0 && git push origin v0.1.0
 |---|---|
 | `SquareRoot-linux-x86_64` | ubuntu |
 | `SquareRoot-windows-x86_64.exe` | windows |
-| `SquareRoot-macos.dmg` | macos |
+| `SquareRoot-macos-arm64.dmg` | macos-latest (Apple Silicon) |
+| `SquareRoot-macos-x86_64.dmg` | macos-15-intel (Intel Macs) |
+
+The two macOS builds are separate on purpose: PyInstaller bundles the runner's
+Python, and a universal2 build would need every bundled binary to be fat.
+Each job checks the architecture with `lipo` and prints the minimum macOS
+version (`minos`), then launches the app for 5 seconds.
 
 Windows/macOS builds are unsigned (SmartScreen/Gatekeeper will warn).
+Supported OS versions and hardware: `docs/SystemRequirements.md`.
 
 ## Local (Linux)
 
