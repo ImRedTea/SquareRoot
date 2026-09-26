@@ -31,12 +31,8 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk xvfb lintian
+          sudo apt-get install -y python3-tk xvfb
           pip install pyinstaller
-      - name: Build .deb
-        run: |
-          packaging/deb/build_deb.sh
-          lintian --no-tag-display-limit dist/*.deb || true
       - name: Build Linux binary
         run: pyinstaller --noconfirm packaging/pyinstaller/squareroot.spec
       - name: Smoke-test binary (must still be running after 5s)
@@ -45,25 +41,10 @@ jobs:
           xvfb-run -a timeout 5 dist/SquareRoot
           [ $? -eq 124 ]
       - run: mv dist/SquareRoot dist/SquareRoot-linux-x86_64
-      - name: Build Arch package
-        run: |
-          docker run --rm -v "$PWD:/src" archlinux:latest bash -euxc '
-            pacman -Syu --noconfirm base-devel git python python-build python-installer python-setuptools python-wheel tk
-            useradd -m builder
-            git config --global --add safe.directory /src
-            cp -r /src /home/builder/src && chown -R builder /home/builder/src
-            su builder -c "git config --global --add safe.directory /home/builder/src && cd /home/builder/src && packaging/aur/build_pkg.sh"
-            cp /home/builder/src/dist/*.pkg.tar.* /src/dist/
-            pacman -U --noconfirm /src/dist/*.pkg.tar.*
-            python -c "import squareroot; print(squareroot.__version__)"
-          '
       - uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: |
-            dist/*.deb
-            dist/*.pkg.tar.*
-            dist/SquareRoot-linux-x86_64
+          path: dist/SquareRoot-linux-x86_64
 
   windows:
     needs: test

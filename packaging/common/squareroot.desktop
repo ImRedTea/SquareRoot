@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=SquareRoot
-Comment=Complex-number calculator
-Exec=squareroot-gui
-Terminal=false
-Categories=Utility;Calculator;
